@@ -1,3 +1,4 @@
 solver_based_try.m
 minimax_try.m
 Optimization/environment
+.gitignore
