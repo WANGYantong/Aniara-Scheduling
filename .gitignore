@@ -1,8 +1,5 @@
-# Ingore some toy examples
+# Ingore some try examples
 
-toy_figure.m
-toy_intProg.m
-toy_multiObj.m
 solver_based_try.m
 minimax_try.m
 
