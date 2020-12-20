@@ -1,4 +1,4 @@
-function [rate_table,max_rate,Random_time] = TaskRondom(set,para)
+function [rate_table,max_rate,Random_time,seed_xyz] = TaskRondom(set,para)
 
 %% Load Parameters
 NUM_ROBOTS=set.NUM_ROBOTS; % the number of robots
@@ -13,6 +13,7 @@ G_max=para.G_max; % for maximum gap between adjacent tasks
 tic;
 %% Allocate Time Slot
 solution_Y=zeros(NUM_ROBOTS,NUM_TASKS,T);
+solution_X=solution_Y;
 
 for ii=1:NUM_ROBOTS
     ES=1; % earliest start time
@@ -24,6 +25,7 @@ for ii=1:NUM_ROBOTS
     ST=randi([ES,LS]); % allocated start time
     ET=ST+D(ii,1)-1; % according end time
     solution_Y(ii,1,ST:ET)=1;
+    solution_X(ii,1,ST)=1;
     if NUM_TASKS>=2
         for jj=2:NUM_TASKS
             ES=ET+G_min(ii,jj-1)+1;
@@ -37,6 +39,7 @@ for ii=1:NUM_ROBOTS
             ST=randi([ES,LS]);
             ET=ST+D(ii,jj)-1;
             solution_Y(ii,jj,ST:ET)=1;
+            solution_X(ii,jj,ST)=1;
         end
     end
 end
@@ -53,6 +56,8 @@ for ii=1:NUM_ROBOTS
 end
 rate_table(end,:)=sum(rate_table,1);
 max_rate=max(rate_table(end,:));
+
+seed_xyz=[solution_X(:);solution_Y(:);max_rate];
 
 end
 

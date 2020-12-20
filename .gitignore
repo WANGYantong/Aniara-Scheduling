@@ -1,5 +1,8 @@
 # Ingore some try examples
-
 solver_based_try.m
 minimax_try.m
+toy_rlGrid.m
+toy_mdp.m
 
+# Ingore specific files
+/Cart-Pole/

@@ -1,5 +1,8 @@
-function [rate_table,solution_Z,ILP_time] = ILP(set,para)
+function [rate_table,solution_Z,ILP_time] = ILP(set,para,seed_xyz)
 
+if nargin <3
+    seed_xyz=[];
+end
 
 %% Load Parameters
 NUM_ROBOTS=set.NUM_ROBOTS; % the number of robots
@@ -149,13 +152,14 @@ opts=optimoptions('intlinprog','Display','off','MaxTime',28800);
 intcon=1:NUM_DV;
 
 RobotSchedule.f=obj;
-RobotSchedule.intcon=intcon; % initial point
+RobotSchedule.intcon=intcon; % integer point
 RobotSchedule.Aineq=Aineq;
 RobotSchedule.bineq=bineq;
 RobotSchedule.Aeq=Aeq;
 RobotSchedule.beq=beq;
 RobotSchedule.lb=lb;
 RobotSchedule.ub=ub;
+RobotSchedule.x0=seed_xyz;
 RobotSchedule.solver='intlinprog';
 RobotSchedule.options=opts;
 
