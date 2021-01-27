@@ -1,40 +1,45 @@
-function [rate_table,solution_Z,ILP_time] = ILP(set,para,seed_xyz)
+function [rate_table,max_rate,ga_time] = TaskGA(set,para,seed_xyz)
 
-if nargin <3
+if nargin<3
     seed_xyz=[];
 end
 
-%% Load Parameters
+%% load Parameters
 NUM_ROBOTS=set.NUM_ROBOTS; % the number of robots
 NUM_TASKS=set.NUM_TASKS; % the number of tasks in each robot
 T=set.T; % the number of time slots in each period
 
-D=para.D; % for task processing duration
-R=para.R; % for task communication data rate
-G_min=para.G_min; % for minimum gap between adjacent tasks
-G_max=para.G_max; % for maximum gap between adjacent tasks
+D=para.D; % task processing duration
+R=para.R; % task communication data rate
+G_min=para.G_min; % minimum gap between adjacent tasks
+G_max=para.G_max; % maximum gap between adjacent tasks
 
 
-%% Generate Objective 
+%% Generate Objective
 NUM_DV=NUM_ROBOTS*NUM_TASKS*T*2+1; % the number of decision variables (d.v.)
 
 % objective vector for d.v. z
-obj=sparse([zeros(1,NUM_DV-1),1]);
+% obj=sparse([zeros(1,NUM_DV-1),1]);
+
+fun=@(x)(x(end));
 
 
 %% Inequality Constraints
-Aineq=spalloc(...
-    NUM_ROBOTS*(NUM_TASKS-1)+NUM_ROBOTS*(NUM_TASKS-1)+NUM_ROBOTS+sum(D,'all')*T+T,...
-    NUM_DV,2*T*NUM_ROBOTS*(NUM_TASKS-1)+2*T*NUM_ROBOTS*(NUM_TASKS-1)+...
-    T*NUM_ROBOTS+2*sum(D,'all')*T+(NUM_ROBOTS*NUM_TASKS+1)*T);
-bineq=zeros(NUM_ROBOTS*(NUM_TASKS-1)+NUM_ROBOTS*(NUM_TASKS-1)+NUM_ROBOTS+...
-    sum(D,'all')*T+T,1);
+% linear equality constraints are not supported yet
+% therefore these equalities are converted to \leq and \gea constraints
+Aineq=spalloc(NUM_ROBOTS*(NUM_TASKS-1)*2+NUM_ROBOTS+sum(D,'all')*T...
+    +T+NUM_ROBOTS*NUM_TASKS*4,...
+    NUM_DV,...
+    2*T*NUM_ROBOTS*(NUM_TASKS-1)*2+T*NUM_ROBOTS+2*sum(D,'all')*T...
+    +(NUM_ROBOTS*NUM_TASKS+1)*T+T*NUM_ROBOTS*NUM_TASKS*4);
+bineq=zeros(NUM_ROBOTS*(NUM_TASKS-1)*2+NUM_ROBOTS+sum(D,'all')*T...
+    +T+NUM_ROBOTS*NUM_TASKS*4,1);
 
 clearer1=zeros(NUM_ROBOTS,NUM_TASKS,T);
 clearer11=clearer1(:);
+counter=1;
 
 % minimum gap constraints
-counter=1;
 for ii=1:NUM_ROBOTS
     for jj=1:NUM_TASKS-1
         xtemp=clearer1;
@@ -47,8 +52,8 @@ for ii=1:NUM_ROBOTS
         bineq(counter)=-G_min(ii,jj);
         counter=counter+1;
     end
-end            
-            
+end
+
 % maximum gap constraints
 for ii=1:NUM_ROBOTS
     for jj=1:NUM_TASKS-1
@@ -62,7 +67,7 @@ for ii=1:NUM_ROBOTS
         bineq(counter)=G_max(ii,jj);
         counter=counter+1;
     end
-end      
+end
 
 % the last task constraints
 for ii=1:NUM_ROBOTS
@@ -72,7 +77,7 @@ for ii=1:NUM_ROBOTS
     end
     xtemp=sparse([xtemp(:);clearer11;0]);
     Aineq(counter,:)=xtemp';
-    bineq(counter,:)=T-G_min(ii,NUM_TASKS);
+    bineq(counter)=T-G_min(ii,NUM_TASKS);
     counter=counter+1;
 end
 
@@ -110,32 +115,49 @@ for kk=1:T
     counter=counter+1;
 end
 
-
-%% Equality Constraints
-Aeq=spalloc(NUM_ROBOTS*NUM_TASKS+NUM_ROBOTS*NUM_TASKS,...
-    NUM_DV,NUM_ROBOTS*NUM_TASKS*T+NUM_ROBOTS*NUM_TASKS*T);
-beq=ones(NUM_ROBOTS*NUM_TASKS+NUM_ROBOTS*NUM_TASKS,1);
-
-counter=1;
-% only one starting time for each task
+% equality conversion: only one starting time for each task
 for ii=1:NUM_ROBOTS
     for jj=1:NUM_TASKS
         xtemp=clearer1;
         xtemp(ii,jj,:)=1;
         xtemp=sparse([xtemp(:);clearer11;0]);
-        Aeq(counter,:)=xtemp';
+        Aineq(counter,:)=xtemp';
+        bineq(counter)=1;
         counter=counter+1;
     end
 end
 
-% the occupying slot is equal with task processing duration 
+for ii=1:NUM_ROBOTS
+    for jj=1:NUM_TASKS
+        xtemp=clearer1;
+        xtemp(ii,jj,:)=-1;
+        xtemp=sparse([xtemp(:);clearer11;0]);
+        Aineq(counter,:)=xtemp';
+        bineq(counter)=-1;
+        counter=counter+1;
+    end
+end
+
+% equality conversion: the occupying slot is equal with task processing
+% duration
 for ii=1:NUM_ROBOTS
     for jj=1:NUM_TASKS
         ytemp=clearer1;
         ytemp(ii,jj,:)=1;
         ytemp=sparse([clearer11;ytemp(:);0]);
-        Aeq(counter,:)=ytemp';
-        beq(counter)=D(ii,jj);
+        Aineq(counter,:)=ytemp';
+        bineq(counter)=D(ii,jj);
+        counter=counter+1;
+    end
+end
+
+for ii=1:NUM_ROBOTS
+    for jj=1:NUM_TASKS
+        ytemp=clearer1;
+        ytemp(ii,jj,:)=-1;
+        ytemp=sparse([clearer11;ytemp(:);0]);
+        Aineq(counter,:)=ytemp';
+        bineq(counter)=-D(ii,jj);
         counter=counter+1;
     end
 end
@@ -148,38 +170,37 @@ ub(end)=inf;
 
 
 %% Solve the Problem
-opts=optimoptions('intlinprog','Display','off','MaxTime',28800);
-intcon=1:NUM_DV;
+opts=optimoptions(@ga,...
+                  'PopulationSize',1e3,...
+                  'MaxGenerations',1e2,...
+                  'EliteCount',1e2,...
+                  'FunctionTolerance',1e-8,...
+                  'CrossoverFraction',0.9,...
+                  'InitialPopulationMatrix',seed_xyz');
 
-RobotSchedule.f=obj;
-RobotSchedule.intcon=intcon; % integer point
-RobotSchedule.Aineq=Aineq;
-RobotSchedule.bineq=bineq;
-RobotSchedule.Aeq=Aeq;
-RobotSchedule.beq=beq;
-RobotSchedule.lb=lb;
-RobotSchedule.ub=ub;
-RobotSchedule.x0=seed_xyz;
-RobotSchedule.solver='intlinprog';
-RobotSchedule.options=opts;
+RobotGA.fitnessfcn=fun;
+RobotGA.nvars=NUM_DV;
+RobotGA.Aineq=Aineq;
+RobotGA.Bineq=bineq;
+RobotGA.Aeq=[];
+RobotGA.Beq=[];
+RobotGA.lb=lb;
+RobotGA.ub=ub;
+RobotGA.nonlcon=[];
+RobotGA.IntCon=1:NUM_DV;
+RobotGA.solver='ga';
+RobotGA.options=opts;
 
 tic;
-solution=intlinprog(RobotSchedule);
-ILP_time=toc;
-
-if isempty(solution)
-    disp('intlinprog did not return a solution.')
-    return
-end
+solution=ga(RobotGA);
+ga_time=toc;
 
 
 %% Reshape the Solution
 solution=round(solution);
-% solution_X=solution(1:NUM_ROBOTS*NUM_TASKS*T);
-% solution_X=reshape(solution_X,NUM_ROBOTS,NUM_TASKS,T);
 solution_Y=solution(NUM_ROBOTS*NUM_TASKS*T+1:end-1);
 solution_Y=reshape(solution_Y,NUM_ROBOTS,NUM_TASKS,T);
-solution_Z=solution(end);
+max_rate=solution(end);
 
 
 %% Rate Table

@@ -1,4 +1,4 @@
-function [rate_table,max_rate,Random_time,seed_xyz] = TaskRondom(set,para)
+function [rate_table,max_rate,Random_time,seed_xyz] = TaskRandom(set,para)
 
 %% Load Parameters
 NUM_ROBOTS=set.NUM_ROBOTS; % the number of robots
@@ -21,7 +21,7 @@ for ii=1:NUM_ROBOTS
     if ES>LS
         disp('infeasible input')
         return
-    end
+    end  
     ST=randi([ES,LS]); % allocated start time
     ET=ST+D(ii,1)-1; % according end time
     solution_Y(ii,1,ST:ET)=1;

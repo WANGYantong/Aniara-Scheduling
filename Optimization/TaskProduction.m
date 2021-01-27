@@ -2,8 +2,8 @@ function [set,para] = TaskProduction(NUM_samples)
 
 rng(1);
 
-NUM_ROBOTS=10; % the number of robots
-NUM_TASKS=3; % the number of tasks in each robot
+NUM_ROBOTS=10; % the number of robots [2,4,6,8,10]
+NUM_TASKS=3; % the number of tasks in each robot [1,2,3]
 T=15; % the number of time slots in each period
 
 para=cell(NUM_samples,1);
