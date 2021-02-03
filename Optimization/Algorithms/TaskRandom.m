@@ -10,8 +10,12 @@ R=para.R; % for task communication data rate
 G_min=para.G_min; % for minimum gap between adjacent tasks
 G_max=para.G_max; % for maximum gap between adjacent tasks
 
-tic;
+    
 %% Allocate Time Slot
+time_loop=1;
+tic;
+for xx=1:time_loop  % for accurate tic-toc time counting
+    
 solution_Y=zeros(NUM_ROBOTS,NUM_TASKS,T);
 solution_X=solution_Y;
 
@@ -44,7 +48,9 @@ for ii=1:NUM_ROBOTS
     end
 end
 
-Random_time=toc;
+end
+timer=toc;
+Random_time=timer/time_loop;
 
 %% Rate Table
 rate_table=zeros(NUM_ROBOTS+1,T);

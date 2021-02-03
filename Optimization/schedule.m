@@ -15,6 +15,7 @@ random_seed=cell(NUM_samples,1);
 for ii=1:NUM_samples
     [random_table{ii},random_max(ii),random_time(ii),random_seed{ii}]=...
         TaskRandom(set,para{ii});
+    fprintf("Random finish task %d \n",ii);
 end
 
 
@@ -34,7 +35,7 @@ end
 cas_table=cell(NUM_samples,1);
 cas_max=zeros(NUM_samples,1);
 cas_time=zeros(NUM_samples,1);
-parfor ii=1:NUM_samples
+for ii=1:NUM_samples
     [cas_table{ii},cas_max(ii),cas_time(ii)]=...
         TaskCascade(set,para{ii},random_seed{ii});
     fprintf("Cascade finish task %d \n",ii);
@@ -45,7 +46,7 @@ end
 ranCas_table=cell(NUM_samples,1);
 ranCas_max=zeros(NUM_samples,1);
 ranCas_time=zeros(NUM_samples,1);
-parfor ii=1:NUM_samples
+for ii=1:NUM_samples
     [ranCas_table{ii},ranCas_max(ii),ranCas_time(ii)]=...
         TaskRanCascade(set,para{ii},multiR_seed{ii});
     fprintf("Random+Cascade finish task %d \n",ii);
@@ -56,7 +57,7 @@ end
 optimal_table=cell(NUM_samples,1);
 optimal_max=zeros(NUM_samples,1);
 optimal_time=zeros(NUM_samples,1);
-parfor ii=1:NUM_samples
+for ii=1:NUM_samples
     [optimal_table{ii},optimal_max(ii),optimal_time(ii)]=...
         ILP(set,para{ii},multiR_seed{ii});
     fprintf("ILP finish task %d \n",ii);

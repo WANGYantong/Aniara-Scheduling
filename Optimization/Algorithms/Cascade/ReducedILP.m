@@ -120,9 +120,13 @@ RobotSchedule.ub=ub;
 RobotSchedule.solver='intlinprog';
 RobotSchedule.options=opts;
 
+time_loop=1;
 tic;
+for xx=1:time_loop
 solution=intlinprog(RobotSchedule);
-ReducedILP_time=toc;
+end
+timer=toc;
+ReducedILP_time=timer/time_loop;
 
 if isempty(solution)
     ST=zeros(NUM_ROBOTS,1);
