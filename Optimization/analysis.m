@@ -116,4 +116,19 @@ for jj=1:length(TASKS)
     
 end
 
+Iter=[1,1e1,1e2,1e3,1e4,1e5];
+mean_perf=(19.7500-[19.7500,16.2400,14.8900,13.8900,13.2300,12.8300])./(19.7500);
+mean_time=[1.4179e-04,0.0015,0.0141,0.1480,1.5288,15.3304];
 
+figure;
+plot(Iter,mean_perf,'-o','LineWidth',5,'MarkerSize',15);
+grid on;
+xlabel('Iterations');
+ylabel('the Percent of Reduction');
+set(gca,'XScale','log','fontsize',36,'FontWeight','bold');
+figure;
+plot(Iter,mean_time,'-o','LineWidth',5,'MarkerSize',15);
+grid on;
+xlabel('Iterations');
+ylabel('Running Time: second');
+set(gca,'XScale','log','fontsize',36,'FontWeight','bold');
